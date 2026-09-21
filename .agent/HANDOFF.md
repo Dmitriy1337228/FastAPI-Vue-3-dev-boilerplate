@@ -1,8 +1,8 @@
 # HANDOFF — FastAPI + Vue3 + PostgreSQL + Nginx dev-boilerplate
 
-Дата: 2026-09-21 (~19:30).
+Дата: 2026-09-21 (~19:45).
 
-## STATUS: ✅ ЗАВЕРШЕНО — все критерии ТЗ выполнены, проверены, проект вычищен
+## STATUS: ✅ ЗАВЕРШЕНО — все критерии ТЗ выполнены, проект вычищен, закоммичен и запушен на GitHub
 
 Блокер из предыдущей сессии («висящий npm install») оказался не блокером:
 `npm install` в контейнере frontend **завершился сам** за ~11 минут (медленно, но не завис) —
@@ -57,13 +57,23 @@
 
 ## Уборка (выполнена)
 
-- Удалены артефакты отладки прошлой сессии из корня проекта: `package.json` (битый), `package-lock.json`, `node_modules/` (след host-установки npm).
+- Удалены артефакты отладки прошлой сессии из корня проекта: `package.json` (битый), `package-lock.json`, `node_modules/` (след host-установки npm), а также файлы-мусор от искажённых команд: `{{.Destination}}{{println}}{{end}}` и файл с именем U+F00D.
 - Удалена временная папка `_diag/` (все скрипты диагностики).
 - **Добавлен постоянный скрипт приёмки `.agent/check.sh`** — прогон всех 8 проверок, exit code 0 при успехе:
   `wsl bash /home/laravel/projects/fastapi_example/.agent/check.sh`
 - `frontend/package-lock.json` оставлен (создан npm install, согласован с `frontend/package.json`: vite 6.4.3, 169 пакетов) — фиксирует версии.
 - **Добавлен `README.md`** — описание проекта, первая сборка, ежедневные кейсы, добавление зависимостей
   фронта/бэка, особенности хоста, troubleshooting.
+
+## Git (настроено)
+
+- Репозиторий: `https://github.com/Dmitriy1337228/FastAPI-Vue-3-dev-boilerplate.git`, ветка `main`, коммит `ca1608d` (19 файлов), `origin/main` отслеживается, working tree clean.
+- ⚠️ **WSL-дистрибутив НЕ имеет исходящего интернета** (DNS не резолвит даже `1.1.1.1`; контейнеры Docker при этом имеют сеть через собственный NAT Docker Desktop). Поэтому git-операции с сетью (fetch/push/pull) выполнять **Windows-git'ом** из PowerShell, работая с репо через UNC-путь:
+  `cd \\wsl.localhost\Ubuntu\home\laravel\projects\fastapi_example`
+- Локальные git-операции (status/add/commit/log) можно делать и WSL-git'ом — `.git` совместим.
+- Auth: Git Credential Manager (Windows, system-level `credential.helper=manager`); GitHub-учётные данные уже сохранены в Windows Credential Manager — push прошёл без интеракции.
+- Identity в коммите: из глобального Windows-конфига (Rogov Dmitriy / RogovDR@mpei.ru); repo-local `core.autocrlf=false` (байт-в-байт LF).
+- В индекс намеренно включён `.agent/` (HANDOFF.md + check.sh: README ссылается на check.sh).
 
 ## Структура проекта (финальная)
 
@@ -81,15 +91,23 @@ docker-compose.yml   backend, frontend, nginx, db (postgres_data named volume, h
 
 ## Если понадобится продолжить работу
 
-```bash
-wsl bash /home/laravel/projects/fastapi_example/.agent/check.sh          # приёмка
+```powershell
+# PowerShell — приёмка и docker:
+wsl bash /home/laravel/projects/fastapi_example/.agent/check.sh
 wsl bash -c 'cd /home/laravel/projects/fastapi_example && docker compose ps'
-wsl bash -c 'cd /home/laravel/projects/fastapi_example && docker compose logs frontend'
-wsl bash -c 'cd /home/laravel/projects/fastapi_example && docker compose up -d --build'
+
+# PowerShell — git (push/pull только отсюда, у WSL нет интернета):
+cd \\wsl.localhost\Ubuntu\home\laravel\projects\fastapi_example
+git status ; git push
 ```
 
 ⚠️ Терминал — PowerShell (win32): НЕ передавать через `wsl bash -c '...'` строки с пробелами внутри
-кавычек и с `%{...}`/`{{...}}` — `wsl.exe` ломает квотинг (аргументы режутся по пробелам). Для таких
-команд — скрипт-файл + `wsl bash /путь/скрипт.sh`.
+кавычек, `%{...}`/`{{...}}`, `\|` — `wsl.exe` ломает квотинг (аргументы режутся по пробелам, скобки
+и экранирование искажаются; однажды это создало файлы-мусор в корне и выполнило чужой файл как скрипт).
+Для сложных команд — файл-скрипт + `wsl bash /путь/скрипт.sh`.
+
+⚠️ НЕ использовать `edit_existing_file` для `.agent/HANDOFF.md` — инструмент дважды сообщал об успехе,
+но на диск попадал посторонний текст (порча файла). Только удалить + создать заново через create_new_file,
+после чего проверять содержимое через shell (`wc -c`, `grep`), а не только по отчёту инструмента.
 
 Оставшиеся не-автоматизируемые пункты: browser-тест HMR в реальном браузере (нет browser automation).
