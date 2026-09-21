@@ -1,0 +1,19 @@
+FROM ghcr.io/astral-sh/uv:python3.12-alpine
+
+# Keep the uv-created virtualenv outside /app so the
+# "./backend:/app" dev mount does not shadow it.
+ENV UV_PROJECT_ENVIRONMENT=/opt/venv
+
+WORKDIR /app
+
+COPY pyproject.toml uv.lock ./
+
+# Install exact deps from the lockfile (no project install needed,
+# source code is mounted from the host during dev).
+RUN uv sync --frozen --no-install-project
+
+COPY . .
+
+EXPOSE 8000
+
+CMD ["uv", "run", "--no-sync", "uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000", "--reload"]

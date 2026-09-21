@@ -1,0 +1,17 @@
+FROM node:20-alpine
+
+WORKDIR /app
+
+COPY package.json ./
+
+# NOTE: node_modules is intentionally NOT installed during the image build
+# (buildkit stalls on `npm install` on this Docker Desktop/WSL2 setup).
+# Dependencies are installed at container start via the compose `command`
+# into the anonymous /app/node_modules volume — installs fine at runtime
+# (~25s) and survives container restarts.
+
+COPY . .
+
+EXPOSE 3000
+
+CMD ["npm", "run", "dev", "--", "--host", "0.0.0.0", "--port", "3000"]
